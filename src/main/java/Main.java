@@ -1,4 +1,5 @@
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
@@ -29,6 +30,8 @@ import java.io.InputStreamReader;
  */
 public class Main {
     public static void main(String[] args) throws Exception {
+        Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
+
         SSLContextBuilder builder = new SSLContextBuilder();
         builder.loadTrustMaterial(null,new TrustSelfSignedStrategy());
         HostnameVerifier allowAllHosts = new NoopHostnameVerifier();
@@ -38,19 +41,20 @@ public class Main {
         CloseableHttpClient httpclient = HttpClients.custom().setSSLSocketFactory(sslsf).build();
 
         HttpPost httpPost = new HttpPost("https://isp.vbg.ru/zabbix/api_jsonrpc.php");
-        StringEntity params = new StringEntity("{\n" +
-                "    \"jsonrpc\": \"2.0\",\n" +
-                "    \"method\": \"host.get\",\n" +
-                "    \"params\": {\n" +
-                "        \"output\": [\n" +
-                "            \"hostid\",\n" +
-                "            \"host\",\n" +
-                "\"name\"\n" +
-                "        ]\n" +
-                "    },\n" +
-                "    \"id\": 2,\n" +
-                "    \"auth\": \"914891f5250aaead5141749959e505f1\"\n" +
-                "}");
+//        StringEntity params = new StringEntity("{\n" +
+//                "    \"jsonrpc\": \"2.0\",\n" +
+//                "    \"method\": \"host.get\",\n" +
+//                "    \"params\": {\n" +
+//                "        \"output\": [\n" +
+//                "            \"hostid\",\n" +
+//                "            \"host\",\n" +
+//                "\"name\"\n" +
+//                "        ]\n" +
+//                "    },\n" +
+//                "    \"id\": 2,\n" +
+//                "    \"auth\": \"914891f5250aaead5141749959e505f1\"\n" +
+//                "}");
+        StringEntity params = new StringEntity(gson.toJson(new ZabbixRequestMessage()));
         params.setContentType(ContentType.APPLICATION_JSON.getMimeType());
 //        List <NameValuePair> nvps = new ArrayList <NameValuePair>();
 //        nvps.add(new BasicNameValuePair("username", "vip"));
@@ -60,21 +64,82 @@ public class Main {
         httpPost.setEntity(params);
         HttpResponse response = httpclient.execute(httpPost);
         BufferedReader breader = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
-        StringBuilder stringBuilder=new StringBuilder();
-        String result = "";
+        StringBuilder rawResult=new StringBuilder();
         String temp="test";
         while ((temp = breader.readLine()) != null) {
-            stringBuilder.append(temp);
+            rawResult.append(temp);
         }
 
-        System.out.println(stringBuilder);
+        System.out.println(rawResult);
         httpclient.close();
 
-        Gson gson = new Gson();
+        JsonMessage jsonAnswer = gson.fromJson(rawResult.toString(),JsonMessage.class);
+
+        //System.out.println(jsonAnswer);
+
+        System.out.println(gson.toJson(new ZabbixRequestMessage()));
+
 
 
     }
+   class JsonMessage {
+       String jsonrpc;
+       ZabbixItem result[];
 
+       public String getJsonrpc() {
+           return jsonrpc;
+       }
+
+       public void setJsonrpc(String jsonrpc) {
+           this.jsonrpc = jsonrpc;
+       }
+
+       public ZabbixItem[] getResult() {
+           return result;
+       }
+
+       public void setResult(ZabbixItem[] result) {
+           this.result = result;
+       }
+
+       @Override
+       public String toString() {
+           return jsonrpc+" "+result.length;
+       }
+
+
+
+   }
+
+   class ZabbixItem{
+        int hostid;
+        String host;
+        String name;
+
+       public int getHostid() {
+           return hostid;
+       }
+
+       public void setHostid(int hostid) {
+           this.hostid = hostid;
+       }
+
+       public String getHost() {
+           return host;
+       }
+
+       public void setHost(String host) {
+           this.host = host;
+       }
+
+       public String getName() {
+           return name;
+       }
+
+       public void setName(String name) {
+           this.name = name;
+       }
+   }
 
 }
 
