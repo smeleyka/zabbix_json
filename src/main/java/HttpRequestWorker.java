@@ -23,15 +23,15 @@ public class HttpRequestWorker {
     static SSLContextBuilder builder;
     static SslHostVerifier allowAllHosts;
 
-    public static String getJson(Gson reurest) throws Exception {
+    public static String getJson(String request) throws Exception {
         builder = new SSLContextBuilder();
         builder.loadTrustMaterial(null, new TrustSelfSignedStrategy());
-        allowAllHosts =new SslHostVerifier();
+        allowAllHosts = SslHostVerifier.INSTANCE;
         SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(builder.build(), allowAllHosts);
-        //CloseableHttpClient httpclient = HttpClientBuilder.create().build();
         CloseableHttpClient httpclient = HttpClients.custom().setSSLSocketFactory(sslsf).build();
 
         HttpPost httpPost = new HttpPost(URL);
+        //CloseableHttpClient httpclient = HttpClientBuilder.create().build();
         //        StringEntity params = new StringEntity("{\n" +
 //                "    \"jsonrpc\": \"2.0\",\n" +
 //                "    \"method\": \"host.get\",\n" +
@@ -45,21 +45,24 @@ public class HttpRequestWorker {
 //                "    \"id\": 2,\n" +
 //                "    \"auth\": \"914891f5250aaead5141749959e505f1\"\n" +
 //                "}");
-        StringEntity params = new StringEntity(gson.toJson(new ZabbixRequestMessage()));
-        params.setContentType(ContentType.APPLICATION_JSON.getMimeType());
-//        List <NameValuePair> nvps = new ArrayList <NameValuePair>();
+        //        List <NameValuePair> nvps = new ArrayList <NameValuePair>();
 //        nvps.add(new BasicNameValuePair("username", "vip"));
 //        nvps.add(new BasicNameValuePair("password", "secret"));
 //        httpPost.setEntity(new UrlEncodedFormEntity(nvps));
 //        CloseableHttpResponse response2 = httpclient.execute(httpPost);
+        StringEntity params = new StringEntity(request);
+        params.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+
         httpPost.setEntity(params);
         HttpResponse response = httpclient.execute(httpPost);
         BufferedReader breader = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
-        StringBuilder rawResult = new StringBuilder();
-        String temp = "test";
-        while ((temp = breader.readLine()) != null) {
-            rawResult.append(temp);
+        StringBuilder result = new StringBuilder();
+        String rawResult = "";
+        while ((rawResult = breader.readLine()) != null) {
+            result.append(rawResult);
         }
+        httpclient.close();
+        return result.toString();
     }
 
 
