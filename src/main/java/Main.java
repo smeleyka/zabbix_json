@@ -1,6 +1,15 @@
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import java.io.File;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
+import java.util.Comparator;
+
 
 /**
  * Created by smeleyka on 23.10.17.
@@ -12,12 +21,32 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
 
+        Charset charset = Charset.forName("UTF-8");
+        Path directory  = Paths.get("/home/smeleyka/DirectoryCreateTest");
+        Path file = Paths.get("/home/smeleyka/DirectoryCreateTest/JsonAnswer.txt");
+
+        if (Files.exists(directory)) {
+            Files.walk(directory).map(Path::toFile)
+                    .sorted((o1, o2) -> -o1.compareTo(o2))
+                    .forEach(File::delete);
+        }
+        Files.createDirectory(directory);
+        //Files.createFile(file);
+
+
+
+
+
         gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
         jsonRequest = gson.toJson(ZabbixRequestMessage.itemGet(11965));
         System.out.println(jsonRequest);
         jsonAnswer = HttpRequestWorker.getJson(jsonRequest);
         JsonMessage jsonMessage = gson.fromJson(jsonAnswer,JsonMessage.class);
         System.out.println(jsonAnswer);
+
+        Files.write(file,jsonRequest.getBytes());
+        Files.write(file,"\n".getBytes(),StandardOpenOption.APPEND);
+        Files.write(file,jsonAnswer.getBytes(),StandardOpenOption.APPEND);
 
 
 
